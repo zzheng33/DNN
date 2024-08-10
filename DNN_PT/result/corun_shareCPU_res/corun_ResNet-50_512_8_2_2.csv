@@ -1,0 +1,14 @@
+Model,Batch_Size,Num_Workers,Num_GPUs,Images/s
+ResNet-50,512,8,2,831.0
+LeNet,512,8,2,1256.5
+ResNet-50,512,8,2,729.25
+ResNet-50,512,8,2,513.25
+ResNet-50,512,8,2,511.75
+ResNet-50,512,8,2,557.25
+ResNet-101,512,8,2,541.0
+VGG-16,512,8,2,541.5
+ResNet-50,512,8,2,527.0
+ResNet-50,512,8,2,549.5
+Inception-V3,512,8,2,453.25
+AlexNet,512,8,2,589.75
+ResNet-50,512,8,2,550.75

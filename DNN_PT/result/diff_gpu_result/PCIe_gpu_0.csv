@@ -1,0 +1,3 @@
+Model,Batch_Size,Num_Workers,Num_GPUs,Images/s
+LeNet,256,8,1,2700.5
+LeNet,256,8,1,2678.5

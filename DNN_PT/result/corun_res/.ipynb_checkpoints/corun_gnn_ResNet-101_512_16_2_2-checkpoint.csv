@@ -1,0 +1,3 @@
+Model,Batch_Size,Num_Workers,Num_GPUs,Images/s
+ResNet-101,512,16,2,754.5263157894736
+ResNet-101,512,16,2,515.0
