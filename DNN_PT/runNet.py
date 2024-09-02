@@ -11,6 +11,7 @@ import random
 import argparse
 import csv
 import torch.nn.functional as F
+from torch.utils.data import Subset
 
 class LeNet(nn.Module):
     def __init__(self, num_classes=1000):
@@ -36,43 +37,47 @@ def get_random_subset_indices(num_samples, dataset_size):
 
 
 def create_dataset(model_name):
-    if model_name == "LeNet":
-        input_size = 32
-    elif model_name == "Inception-V3":
-        input_size = 299
-    else:
-        input_size = 224
-
+    # Define your transformations
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(input_size),
+        transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
     ])
 
-    train_dataset = torchvision.datasets.ImageFolder(os.path.join("/lus/eagle/projects/datascience/ImageNet/ILSVRC/Data/CLS-LOC", "train"), transform=train_transform)
+    # Load the full CIFAR-100 dataset
+    train_dataset = torchvision.datasets.CIFAR100(
+        root='./data',  # or any other directory you prefer
+        train=True,
+        download=True,
+        transform=train_transform
+    )
+    subset_size=1000
+    # If subset_size is specified, return a subset of the dataset
+    if subset_size is not None and subset_size < len(train_dataset):
+        subset_indices = list(range(subset_size))
+        train_dataset = Subset(train_dataset, subset_indices)
 
-    num_samples = 10000
-    train_indices = get_random_subset_indices(num_samples, len(train_dataset))
-    small_train_dataset = Subset(train_dataset, train_indices)
-    return small_train_dataset
+    return train_dataset
+
+
 
 
 def build_model(model_name,GPU_selection,share):
     if model_name == "ResNet-101":
-        model = resnet101(weights=None)
+        model = resnet101(pretrained=None)
     elif model_name == "ResNet-50":
-        model = resnet50(weights=None)
+        model = resnet50(pretrained=None)
     elif model_name == "ResNet-152":
-        model = resnet152(weights=None)
+        model = resnet152(pretrained=None)
     elif model_name == "VGG-16":
-        model = vgg16(weights=None)
+        model = vgg16(pretrained=None)
     elif model_name == "AlexNet":
-        model = alexnet(weights=None)
+        model = alexnet(pretrained=None)
     elif model_name == "LeNet":
         model = LeNet()
     elif model_name == "Inception-V3":
-        model = inception_v3(weights=None, aux_logits=True)
+        model = inception_v3(pretrained=None, aux_logits=True)
         num_ftrs = model.AuxLogits.fc.in_features
         model.AuxLogits.fc = nn.Linear(num_ftrs, 1000)
         num_ftrs = model.fc.in_features
@@ -93,8 +98,9 @@ def build_model(model_name,GPU_selection,share):
     return model, criterion, optimizer, device
 
 
-def create_dataLoader(model_name, batch_size=256, workers=8):
-    return DataLoader(create_dataset(model_name), batch_size=batch_size, num_workers=workers, shuffle=True, pin_memory=True)
+def create_dataLoader(model_name, batch_size, num_workers):
+    return DataLoader(create_dataset(model_name), batch_size=batch_size, num_workers=num_workers, shuffle=True, pin_memory=True)
+
 
 
 def select_device(selected_gpus):
@@ -135,10 +141,10 @@ def train_one_epoch(model_name, model, criterion, optimizer, data_loader, device
 
 
 
-def train(model_name, batch_size=256, GPU_selection=[0, 1], epoch=5, num_workers=8,output="default",share=0):
+def train(model_name, batch_size=256, GPU_selection=[0, 1], epoch=5, num_workers=8, output="default", share=0):
     num_epochs = epoch
     train_loader = create_dataLoader(model_name, batch_size, num_workers)
-        
+    
     model, criterion, optimizer, device = build_model(model_name, GPU_selection=GPU_selection, share=share)
    
     images_per_second_list = []
@@ -165,6 +171,8 @@ def train(model_name, batch_size=256, GPU_selection=[0, 1], epoch=5, num_workers
     with open(csv_file, "a", newline="") as f:
         csv_writer = csv.writer(f)
         csv_writer.writerow(result)
+
+
 
 
 def main(args):
